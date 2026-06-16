@@ -1,0 +1,7 @@
+.git/
+.venv/
+__pycache__/
+*.pyc
+config.ini
+requirements-dev.txt
+README.md

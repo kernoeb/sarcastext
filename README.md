@@ -24,6 +24,15 @@ token = YOURTOKEN:HERE
 
 Run with: `python3 sarcastext.py`
 
+### Docker
+
+```
+docker build -t sarcastext .
+docker run --rm -v "$PWD/config.ini:/app/config.ini:ro" sarcastext
+```
+
+The token is not baked into the image; `config.ini` is mounted at runtime.
+
 ### Development
 
 Lint and format with [ruff](https://docs.astral.sh/ruff/):
