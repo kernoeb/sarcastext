@@ -23,3 +23,13 @@ token = YOURTOKEN:HERE
 > Enable inline mode for your bot via [@BotFather](https://t.me/BotFather) first.
 
 Run with: `python3 sarcastext.py`
+
+### Development
+
+Lint and format with [ruff](https://docs.astral.sh/ruff/):
+
+```
+pip install -r requirements-dev.txt
+ruff check .       # lint
+ruff format .      # format
+```
