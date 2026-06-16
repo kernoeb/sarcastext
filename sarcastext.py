@@ -1,116 +1,98 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-import logging
-from uuid import uuid4
-import random 
 import configparser
-from telegram import InlineQueryResultArticle, ParseMode, \
-    InputTextMessageContent
-from telegram.ext import Updater, InlineQueryHandler, CommandHandler
-from telegram.utils.helpers import escape_markdown
+import logging
+import random
+from collections.abc import Callable
+from uuid import uuid4
+
+from telegram import InlineQueryResultArticle, InputTextMessageContent, Update
+from telegram.ext import (
+    Application,
+    ApplicationBuilder,
+    CommandHandler,
+    ContextTypes,
+    InlineQueryHandler,
+)
 
 config = configparser.ConfigParser()
-config.read('config.ini')
-token = config['DEFAULT']['token']
+config.read("config.ini")
+token = config["DEFAULT"]["token"]
 
 # Enable logging
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    level=logging.INFO)
-
+logging.basicConfig(
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=logging.INFO,
+)
+# httpx logs the full request URL (which contains the bot token) at INFO level.
+logging.getLogger("httpx").setLevel(logging.WARNING)
 logger = logging.getLogger(__name__)
 
 
-def start(update, context):
+def sarcasm(text: str, upper: Callable[[int], bool]) -> str:
+    """Alternate the case of ``text`` using ``upper(index)`` to decide.
+
+    'i' is always kept lowercase and 'l' always uppercase, since they are
+    the most readable that way in the alternating-case ("mocking") style.
+    """
+    out = []
+    for index, char in enumerate(text):
+        if char.lower() == "i":
+            out.append("i")
+        elif char.lower() == "l":
+            out.append("L")
+        elif upper(index):
+            out.append(char.upper())
+        else:
+            out.append(char.lower())
+    return "".join(out)
+
+
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send a message when the command /start is issued."""
-    update.message.reply_text('@sarcastext_bot <TEXT>')
+    await update.message.reply_text("@sarcastext_bot <TEXT>")
 
 
-def inlinequery(update, context):
+async def inlinequery(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle the inline query."""
     query = update.inline_query.query
+    if not query:
+        return
 
-    tmp1 = ""
-    tmp2 = ""
-    tmp3 = ""
+    variants = [
+        ("Sarcastic 1", sarcasm(query, lambda i: i % 2 == 0)),
+        ("Sarcastic 2", sarcasm(query, lambda i: i % 2 != 0)),
+        ("Sarcastic 3", sarcasm(query, lambda i: random.randint(0, 1) == 0)),
+    ]
 
-    c = 0
-    for i in query:
-        if (i.lower() == 'i'):
-            tmp1 += 'i'
-        elif (i.lower() == 'l'):
-            tmp1 += 'L'
-        else:
-            if (c % 2 == 0):
-                tmp1 += i.upper()
-            else:
-                tmp1 += i.lower()
-        c += 1
-
-    c = 0
-    for i in query:
-        if (i.lower() == 'i'):
-            tmp2 += 'i'
-        elif (i.lower() == 'l'):
-            tmp2 += 'L'            
-        else:
-            if (c % 2 != 0):
-                tmp2 += i.upper()
-            else:
-                tmp2 += i.lower()
-        c += 1   
-
-    c = 0
-    for i in query:
-        if (i.lower() == 'i'):
-            tmp3 += 'i'
-        elif (i.lower() == 'l'):
-            tmp3 += 'L'            
-        else:
-            r = random.randint(0, 1) 
-            if (r == 0):
-                tmp3 += i.upper()
-            else:
-                tmp3 += i.lower()
-        c += 1
-
-         
     results = [
         InlineQueryResultArticle(
-            id=uuid4(),
-            title="Sarcastic 1 : " + tmp1 ,
-            input_message_content=InputTextMessageContent(tmp1, parse_mode=ParseMode.MARKDOWN)),
-        InlineQueryResultArticle(
-            id=uuid4(),
-            title="Sarcastic 2 : " + tmp2,  
-            input_message_content=InputTextMessageContent(tmp2, parse_mode=ParseMode.MARKDOWN)),
-        InlineQueryResultArticle(
-            id=uuid4(),
-            title="Sarcastic 3 : " + tmp3,  
-            input_message_content=InputTextMessageContent(tmp3, parse_mode=ParseMode.MARKDOWN))
-        ]
+            id=str(uuid4()),
+            title=f"{label} : {text}",
+            input_message_content=InputTextMessageContent(text),
+        )
+        for label, text in variants
+    ]
 
-    update.inline_query.answer(results)
+    await update.inline_query.answer(results)
 
 
-def error(update, context):
+async def error(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Log Errors caused by Updates."""
     logger.warning('Update "%s" caused error "%s"', update, context.error)
 
 
-def main():
-    updater = Updater(token, use_context=True)
-    dp = updater.dispatcher
-    dp.add_handler(CommandHandler("start", start))
-    dp.add_handler(CommandHandler("help", help))
-    dp.add_handler(InlineQueryHandler(inlinequery))
+def main() -> None:
+    application: Application = ApplicationBuilder().token(token).build()
 
-    dp.add_error_handler(error)
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("help", start))
+    application.add_handler(InlineQueryHandler(inlinequery))
+    application.add_error_handler(error)
 
-    updater.start_polling()
-
-    updater.idle()
+    application.run_polling()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

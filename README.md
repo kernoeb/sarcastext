@@ -1,16 +1,25 @@
 A simple Telegram bot...
 
 
-Edit config.ini file
+Copy the template and add your token:
+
+```
+cp config.ini.example config.ini
+```
 
 ```
 [DEFAULT]
 token = YOURTOKEN:HERE
 ```
 
+> `config.ini` is gitignored, so your token stays local and is never committed.
+
 ### Prerequisites
 
-- Python3
-- python-telegram-bot (`pip install python-telegram-bot`)
+- Python 3.9+
+- Dependencies: `pip install -r requirements.txt`
 
-Run with : `python3 sarcastext.py`
+> Note: this bot now uses the async API of `python-telegram-bot` (v22+).
+> Enable inline mode for your bot via [@BotFather](https://t.me/BotFather) first.
+
+Run with: `python3 sarcastext.py`
