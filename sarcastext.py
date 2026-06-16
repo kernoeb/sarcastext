@@ -3,6 +3,7 @@
 import configparser
 import logging
 import random
+import unicodedata
 from collections.abc import Callable
 from uuid import uuid4
 
@@ -55,7 +56,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 async def inlinequery(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Handle the inline query."""
-    query = update.inline_query.query
+    # Normalize to NFC so decomposed accents (common on macOS) count as a
+    # single character; otherwise combining marks shift the alternation.
+    query = unicodedata.normalize("NFC", update.inline_query.query)
     if not query:
         return
 
